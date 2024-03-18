@@ -1,36 +1,58 @@
 import requests
 from bs4 import BeautifulSoup
+import logging
+
+# Logging
+# Create a custom logger
+logger = logging.getLogger(__name__)
+# Create handlers
+f_handler = logging.FileHandler('get_smic.log')
+f_handler.setLevel(logging.ERROR)
+
+
 
 # URL de la page web
 url = "https://www.service-public.fr/particuliers/vosdroits/F2300"
 
 # Envoie une requête GET pour récupérer le contenu HTML de la page
-try:
-    # Envoie une requête GET pour récupérer le contenu HTML de la page
-    response = requests.get(url)
-    response.raise_for_status()
-except requests.exceptions.RequestException as e:
-    print("ERROR: Failed to get URL:", e)
-    smic="ERROR, choose manually"
-    # Gérer l'erreur ici, par exemple en affichant un message à l'utilisateur
-    # ou en utilisant une valeur par défaut pour le SMIC
-else:
-    html_content = response.content
+def get_smic():
+    """Renvoie la valeur du smic actuelle
 
-    # Crée un objet BeautifulSoup à partir du contenu HTML
-    soup = BeautifulSoup(html_content, 'html.parser')
-
-    # Recherche le tableau contenant les montants du Smic
-    table = soup.find_all('span', class_='sp-prix')
-
+    Returns:
+        str : Valeur du smic sous la forme "XX.XX" ou "ERROR" si il s'est produi une erreur
+    """
     try:
-        smic_tmp=table[1].get_text().strip().replace(" ","").replace("€","").replace(",",".")   
-    except IndexError:
-        print("ERROR: Failed to get SMIC")
-        smic="ERROR, choose manually"
-    else: 
+        # Envoie une requête GET pour récupérer le contenu HTML de la page
+        response = requests.get(url)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        f_handler.error("ERROR: Failed to get URL:", e)
+        smic="ERROR"
+        # Gérer l'erreur ici, par exemple en affichant un message à l'utilisateur
+        # ou en utilisant une valeur par défaut pour le SMIC
+    else:
+        html_content = response.content
 
-        smic = float(smic_tmp)
+        # Crée un objet BeautifulSoup à partir du contenu HTML
+        soup = BeautifulSoup(html_content, 'html.parser')
 
-        if smic < 10 or smic > 20:
-            smic="ERROR, choose manually"
+        # Recherche le tableau contenant les montants du Smic
+        table = soup.find_all('span', class_='sp-prix')
+
+        try:
+            smic_tmp=table[1].get_text().strip().replace(" ","").replace("€","").replace(",",".")
+        except IndexError:
+            f_handler.error("ERROR: Failed to get URL:", e)
+            smic="ERROR"
+        else:
+
+            smic = float(smic_tmp)
+
+            if smic < 10 or smic > 20:
+                f_handler.error("ERROR: smic value too high or too low", e)
+                smic="ERROR"
+    return smic
+
+
+if __name__ == "__main__":
+    print(get_smic())
