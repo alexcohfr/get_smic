@@ -2,10 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import logging
 
-# Logging
-# Create a custom logger
+# Ajout d'un système de logging en vue de l'intégration dans un projet plus large
 logger = logging.getLogger(__name__)
-# Create handlers
 f_handler = logging.FileHandler('get_smic.log')
 f_handler.setLevel(logging.ERROR)
 
@@ -36,10 +34,10 @@ def get_smic():
         # Crée un objet BeautifulSoup à partir du contenu HTML
         soup = BeautifulSoup(html_content, 'html.parser')
 
-        # Recherche le tableau contenant les montants du Smic
+        # Recherche le tableau contenant les montants du Smic (situé dans la classe sp-prix)
         table = soup.find_all('span', class_='sp-prix')
 
-        try:
+        try: # La valeur du smic est la deuxième valeur du tableau
             smic_tmp=table[1].get_text().strip().replace(" ","").replace("€","").replace(",",".")
         except IndexError:
             f_handler.error("ERROR: Failed to get URL:", e)
